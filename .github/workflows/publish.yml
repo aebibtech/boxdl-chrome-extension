@@ -1,0 +1,45 @@
+name: Publish to Chrome Web Store
+
+on:
+  push:
+    branches:
+      - main # Adjust if your default branch is different (e.g., master)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+    steps:
+      - name: Checkout code
+        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+        uses: actions/checkout@v4
+
+      - name: Zip extension files
+        # Creates a zip file named 'extension.zip' containing the necessary files.
+        # Assumes manifest.json, scripts, icons, etc., are in the root directory (or build output directory).
+        # Adjust the files/paths included in the zip command if your structure is different.
+        # It excludes development/repository files like .git, .github, node_modules, and the zip file itself.
+        run: zip -r extension.zip . -x ".git*" ".github*" "node_modules/*" "extension.zip" 
+
+      - name: Upload to Chrome Web Store
+        # Uses a dedicated action to handle the upload and publishing process.
+        uses: PlasmoHQ/chrome-webstore-upload@v4
+        with:
+          # --- Required Secrets --- 
+          # These MUST be configured in your GitHub repository settings:
+          # Settings > Secrets and variables > Actions > New repository secret
+          extension_id: ${{ secrets.CWS_EXTENSION_ID }}     # Your Extension's ID
+          client_id: ${{ secrets.CWS_CLIENT_ID }}          # Google API Client ID
+          client_secret: ${{ secrets.CWS_CLIENT_SECRET }}  # Google API Client Secret
+          refresh_token: ${{ secrets.CWS_REFRESH_TOKEN }} # Google API Refresh Token
+          
+          # --- File Path --- 
+          # Path to the zip file created in the previous step.
+          file_path: extension.zip
+          
+          # --- Optional Settings ---
+          # Publish target: 'default' (publish to public) or 'trustedTesters' (publish to testers only)
+          # publish_target: default 
+          
+          # Skip submit review: Set to 'true' to upload but not submit for review automatically.
+          # Useful if you want to manually check the draft in the developer dashboard first.
+          # skip_submit_review: false
